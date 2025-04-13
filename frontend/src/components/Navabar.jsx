@@ -2,14 +2,18 @@ import React, { useState, useEffect } from "react";
 import LogoDark from "../assets/images/vyapaar-dark.png";
 import Logo from "../assets/images/vyapaar.png";
 import { ThemeToggle } from "../assets/ThemeToggle";
+import { useMediaQuery } from "@mantine/hooks";
 import ProfileToolTip from "../assets/profileTooltip";
+import { useLocation } from "react-router-dom";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showProfileTooltip, setShowProfileTooltip] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
-  const themeMode = localStorage.getItem("theme") === "dark" ? "dark" : "light";
+  const themeMode = localStorage.getItem("mantine-color-scheme-value") === "dark" ? "dark" : "light";
+  const location = useLocation();
+  const HomePage = location.pathname === "/";
+  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -51,7 +55,7 @@ const Navbar = () => {
 
   return (
     <>
-          <nav className="flex justify-between items-center bg-[var(--color-primary)] text-white w-screen px-5 py-4">
+          <nav className={`flex justify-between items-center ${HomePage ? "bg-black opactity-50 !text-white" : "bg-[var(--color-primary)] text-[var(--color-heading)]"}  w-screen px-5 py-4`}>
             {/* Logo */}
             <a className="text-3xl font-bold font-heading" href="/">
               <img className="h-20 w-60" src={themeMode === "dark" ? LogoDark : Logo} alt="logo" />
@@ -59,11 +63,11 @@ const Navbar = () => {
 
             {/* Desktop Nav Links */}
             <ul className="hidden md:flex text-[var(--color-heading)] px-4 mx-auto font-semibold font-heading space-x-12">
-              <li><a className="hover:text-gray-500" href="/">Home</a></li>
-              <li><a className="hover:text-gray-500" href="#">Categories</a></li>
-              <li><a className="hover:text-gray-500" href="#">About</a></li>
-              <li><a className="hover:text-gray-500" href="#">Contact Us</a></li>
-              <li><a className="hover:text-gray-500" href="#">Add Product</a></li>
+              <li><a className="hover:text-purple-500" href="/">Home</a></li>
+              <li><a className="hover:text-purple-500" href="#">Categories</a></li>
+              <li><a className="hover:text-purple-500" href="#">About</a></li>
+              <li><a className="hover:text-purple-500" href="#">Contact Us</a></li>
+              <li><a className="hover:text-purple-500" href="#">Add Product</a></li>
             </ul>
 
             {/* Mobile Menu Toggler + Icons */}
@@ -96,7 +100,7 @@ const Navbar = () => {
                 onMouseLeave={!isMobile ? () => setShowProfileTooltip(false) : undefined}
                 onClick={toggleProfileTooltip}
               >
-                  <ProfileToolTip isVisible={showProfileTooltip} />
+                <ProfileToolTip isVisible={showProfileTooltip} />
               </div>
             </div>
             <div className="flex items-center space-x-4">

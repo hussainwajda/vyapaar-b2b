@@ -1,0 +1,15 @@
+.hero-section{
+    background-color: transparent !important;
+    background-image: url('https://s.alicdn.com/@img/imgextra/i4/O1CN01ustqhi1Tz44lu4arh_!!6000000002452-0-tps-3840-1248.jpg_q60.jpg') !important;
+}
+
+#overlay{
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+#navbar{
+    position: absolute !important;
+    background: transparent !important;
+    color: white !important;
+    z-index: 50;   
+}

@@ -184,6 +184,27 @@ app.get('/api/auth/userinfo', async (req, res) => {
   }
 });
 
+app.post("/api/forgot-password", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  try {
+    const params = {
+      ClientId: CLIENT_ID,
+      Username: email,
+    };
+    
+    await cognito.forgotPassword(params).promise();
+    res.json({ message: "Password reset code sent to your email" });
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Something went wrong" });
+  }
+});
+
+
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

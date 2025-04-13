@@ -4,8 +4,8 @@
 
 @custom-variant dark (&:is(.dark *));
 
-*{
-    overflow-x: hidden;
+div{
+  overflow-x: hidden;
 }
 /* Light mode (default) */
 :root {
@@ -54,7 +54,7 @@
 --color-secondary: #1b263b;
 --color-btn: #415a77;
 --color-heading: #e0e1dd;
---background: oklch(0.13 0.028 261.692);
+--background: #0d1b2a;
 --foreground: oklch(0.985 0.002 247.839);
 --card: oklch(0.13 0.028 261.692);
 --card-foreground: oklch(0.985 0.002 247.839);
@@ -144,3 +144,44 @@
   display: none !important;
 }
 
+.neon-border .dark{
+  position: relative;
+  border-radius: 10px;
+  border: 2px solid #0008ff;
+  box-shadow: 0 0 10px #0008ff, 0 0 40px #0008ff, 0 0 80px #0008ff;
+  animation: neonGlow 1.5s infinite alternate;
+}
+
+@keyframes neonGlow {
+  0% {
+    box-shadow: 0 0 1px #0008ff, 0 0 10px #0008ff, 0 0 20px #0008ff;
+  }
+  100% {
+    box-shadow: 0 0 5px #0008ff, 0 0 20px #0008ff, 0 0 40px #0008ff;
+  }
+}
+
+.neon-border {
+  position: relative;
+  border-radius: 10px;
+  border: 2px solid #040cf1;
+  box-shadow: 0 0 10px #1404f1, 0 0 40px #040cf1, 0 0 80px #040cf1;
+  animation: neonGlow 1.5s infinite alternate;
+}
+
+@keyframes neonGlow {
+  0% {
+    box-shadow: 0 0 1px #040cf1, 0 0 10px #040cf1, 0 0 20px #040cf1;
+  }
+  100% {
+    box-shadow: 0 0 5px #040cf1, 0 0 20px #040cf1, 0 0 40px #040cf1;
+  }
+}
+
+[data-mantine-color-scheme="dark"] {
+  --color-primary: #0d1b2a;
+  --color-secondary: #1b263b;
+  --color-btn: #415a77;
+  --color-heading: #e0e1dd;
+  --background: #0d1b2a
+}

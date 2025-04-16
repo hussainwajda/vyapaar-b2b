@@ -8,7 +8,7 @@ import '@mantine/core/styles.css';
 
 const App = () => {
   return (
-    <div>
+    <div className='app'>
         <Router>
         <Navabar />
           <Routes>

@@ -3,15 +3,15 @@
 @plugin "tailwindcss-animate";
 
 @custom-variant dark (&:is(.dark *));
-
+/* 
 div{
   overflow-x: hidden;
-}
+} */
 
 /* Light mode (default) */
 :root {
     --color-primary: #e0e1dd; 
-    --color-secondary: #415a77;
+    --color-secondary: #657b94;
     --color-btn: #1b263b;
     --color-heading: #0d1b2a;
     --background: oklch(1 0 0);

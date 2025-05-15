@@ -51,6 +51,9 @@ const ProfileToolTip = () => {
                   <a href="/orders" className="block text-sm text-[var(--color-heading)] hover:bg-[var(--color-secondary)] px-2 py-1 rounded">
                     🛒 My Orders
                   </a>
+                  <a href="/orders" className="block text-sm text-[var(--color-heading)] hover:bg-[var(--color-secondary)] px-2 py-1 rounded">
+                    🔔 Notifications
+                  </a>
                   <button className="block text-sm text-red-600 hover:bg-red-100 px-2 py-1 rounded w-full text-left">
                     ❌ Delete Account
                   </button>

@@ -3,13 +3,25 @@ const AWS = require('aws-sdk');
 const cors = require('cors');
 require('dotenv').config();
 const crypto = require('crypto');
+const mongoose = require('mongoose');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
+app.use('/uploaded_document', express.static(path.join(__dirname, 'uploaded_document')));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.use(cors({
     origin: 'http://localhost:5173', // Your frontend URL
     credentials: true
   }));
+
+  // Connect to MongoDB
+  mongoose.connect(process.env.MONGODB_URL)
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 // Configure AWS
 AWS.config.update({
@@ -28,6 +40,73 @@ const generateSecretHash = (username, clientId, clientSecret) => {
 const cognito = new AWS.CognitoIdentityServiceProvider();
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID;
 const CLIENT_ID = process.env.COGNITO_CLIENT_ID;
+
+// storage configuration for document upload
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const username = req.body.username || 'default_user';
+    const isOther = file.fieldname === 'other_documents';
+    const basePath = path.join(__dirname, 'uploaded_document', username, isOther ? 'other_documents' : '');
+    
+    fs.mkdirSync(basePath, { recursive: true });
+    cb(null, basePath);
+  },
+  filename: function (req, file, cb) {
+    const label = file.originalname.split('.')[0].replace(/\s+/g, '_');
+    const ext = path.extname(file.originalname);
+    const timestamp = Date.now();
+    cb(null, `${file.fieldname}_${label}_${timestamp}${ext}`);
+  }
+});
+
+const upload = multer({ storage });
+
+// Schema
+const manufacturerProfileSchema = new mongoose.Schema({
+  name: { type: String, required: true }, // Manufacturer/Business Name
+  email: { type: String, required: true, unique: true },
+  phone: { type: String, required: true },
+  role: { type: String, default: "manufacturer" }, // default helps if this is fixed
+  company_type: { type: String, enum: ['Proprietorship', 'Partnership', 'Pvt Ltd', 'LLP', 'Public Ltd'], required: true },
+
+  categories: [String], // Types of products manufactured
+
+  GST_no: { type: String, required: true, unique: true },
+  PAN_no: { type: String, required: true, unique: true },
+
+  address: {
+    line1: { type: String },
+    line2: { type: String },
+    city: { type: String },
+    state: { type: String },
+    pincode: { type: String },
+  },
+
+
+  year_of_establishment: Number,
+  website: String,
+  logo_url: String, // Optional branding
+
+  certifications: [String],
+  documents: {
+    gst_certificate: String,
+    pan_card: String,
+    incorporation_certificate: String,
+    others: [String],
+  },
+
+  contact_person: {
+    name: String,
+    designation: String,
+    email: String,
+    phone: String,
+  },
+
+  is_verified: { type: Boolean, default: false },
+  created_at: { type: Date, default: Date.now },
+});
+
+const ManufacturerProfile = mongoose.model('ManufacturerProfile', manufacturerProfileSchema);
 
 // Registration Endpoint
 app.post('/api/auth/register', async (req, res) => {
@@ -204,7 +283,69 @@ app.post("/api/forgot-password", async (req, res) => {
   }
 });
 
+app.get("/api/profile", async (req, res) => {
+  const { email } = req.body;
 
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  try {
+    const manufacturerProfile = await ManufacturerProfile.findOne({ email });
+    if (manufacturerProfile) {
+      res.json({ message: "Manufacturer profile already exists" });
+    } else {
+      res.json({ message: "Manufacturer profile does not exist" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Something went wrong" });
+  }
+});
+
+app.post('/api/upload', upload.fields([
+  { name: 'gst_certificate', maxCount: 1 },
+  { name: 'pan_card', maxCount: 1 },
+  { name: 'incorporation_certificate', maxCount: 1 },
+  { name: 'other_documents', maxCount: 10 } // multiple
+]), (req, res) => {
+  const fileUrls = {};
+
+  Object.keys(req.files).forEach(field => {
+    fileUrls[field] = req.files[field].map(file => {
+      const relativePath = `/uploaded_document/${req.body.username}/${field === 'other_documents' ? 'other_documents/' : ''}${file.filename}`;
+      return relativePath;
+    });
+  });
+
+  res.status(200).json({ uploaded: fileUrls });
+});
+
+// API route
+app.post('/api/create-profile', async (req, res) => {
+  try {
+    const profile = new ManufacturerProfile(req.body);
+    await profile.save();
+    res.status(200).json({ message: 'Profile created successfully.' });
+  } catch (error) {
+    console.error('Error saving profile:', error);
+    res.status(500).json({ error: 'Failed to create profile.' });
+  }
+});
+
+
+app.get("/api/getProfile", async (req, res) => {
+  try {
+    const email = req.query.email;
+    const manufacturerProfile = await ManufacturerProfile.findOne({ email: email });
+    if (manufacturerProfile) {
+      res.json({ message: "Manufacturer profile already exists", data: manufacturerProfile, status: 200 });
+    } else {
+      res.json({ message: "Manufacturer profile does not exist", status: 404 });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Something went wrong" });
+  }
+});
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

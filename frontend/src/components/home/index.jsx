@@ -93,7 +93,7 @@ function HomePage() {
       padding: "3rem",
       
     }}
-    className='bg-[var(--color-heading)]'>
+    className='bg-[var(--color-primary)]'>
       {cards.map((card, index) => (
         <SpotlightCard key={index}>
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -107,10 +107,10 @@ function HomePage() {
 
     <ExploreSection />
 
-    <div style={{ height: '600px', position: 'relative' }}>
+    {/* <div style={{ height: '600px', position: 'relative' }}>
       <CircularGallery bend={3} textColor="#ffffff" borderRadius={0.05} />
     </div>
-    <ExploreSection />
+    <ExploreSection /> */}
 
   </div>
   )

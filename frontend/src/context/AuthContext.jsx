@@ -50,6 +50,26 @@ export const AuthProvider = ({ children }) => {
     return token && expiresAt && Date.now() < parseInt(expiresAt);
   };
 
+  const getEmailFromUser = () => {
+    const emailAttr = user?.UserAttributes?.find(attr => attr.Name === 'email');
+    return emailAttr?.Value || '';
+  };
+
+  const getCategoriesFromUser = () => {
+    const categoriesAttr = user?.UserAttributes?.find(attr => attr.Name === 'custom:categories');
+    return categoriesAttr?.Value || '';
+  }
+  
+  const getUserRole = () => {
+    const roleAttr = user?.UserAttributes?.find(attr => attr.Name === 'custom:role');
+    return roleAttr?.Value || '';
+  };
+
+  const checkAdmin = () => {
+    const email = getEmailFromUser();
+    return email === "hajrawajda52@gmail.com";
+  }
+
   // Function to log out
   const logout = () => {
     localStorage.removeItem("idToken");
@@ -68,7 +88,7 @@ export const AuthProvider = ({ children }) => {
   }, [accessToken]);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated }}>
+    <AuthContext.Provider value={{ user, login, getEmailFromUser, checkAdmin, getCategoriesFromUser, getUserRole, logout, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );

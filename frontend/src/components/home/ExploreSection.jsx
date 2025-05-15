@@ -44,11 +44,10 @@ const ExploreSection = () => {
         display: "flex",
         flexWrap: "wrap",
         padding: "4rem 2rem",
-        backgroundColor: "#0f172a",
-        color: "white",
         alignItems: "center",
         justifyContent: "space-between",
       }}
+      className="bg-[var(--color-primary)] text-[var(--color-heading)]"
     >
       {/* Left Side: Heading */}
       <div style={{ flex: "1 1 400px", paddingRight: "2rem", minWidth: "300px" }} className="overflow-hidden">
@@ -67,6 +66,7 @@ const ExploreSection = () => {
           minWidth: "300px",
           marginTop: "2rem",
         }}
+        
       >
         <Counter end={1000} caption="Products Available" />
         <Counter end={500} caption="Verified Sellers" />

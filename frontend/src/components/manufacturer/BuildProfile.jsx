@@ -252,13 +252,18 @@ const ManufacturerStepper = ({ onSubmit }) => {
           alert(`Missing required field: ${field}`);
           return;
         }
+      
       }
+      const requestBody = {
+        updatedForm: updatedForm, 
+        username: username,       
+    };
   
       // POST to backend API
-      const res = await axios.post('http://localhost:3001/api/create-profile', updatedForm);
+      const res = await axios.post('http://localhost:3001/api/create-profile', requestBody);
       if (res.status === 200) {
         alert('Profile created successfully! Please wait for admin verification and approval. Redirecting...');
-        navigate('/dashboard'); // or wherever you want
+        navigate('/'); 
       }
     } catch (err) {
       console.error('Profile submission error:', err);

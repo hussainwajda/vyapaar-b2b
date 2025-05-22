@@ -12,17 +12,20 @@ import {
 } from '@mantine/core';
 import { PieChart } from '@mantine/charts';
 import { useAuth } from '../../../context/AuthContext';
+import { ToastContainer, toast } from 'react-toastify';
 
 const PRIMARY_COL_HEIGHT = rem(300);
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
+  const theme = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
   const { user, checkAdmin } = useAuth();
 
   useEffect(() => {
     if(checkAdmin() === false) {
-      alert('You are not an admin');
-      window.location.href = '/';
+      toast.error('You are not an admin');
+      const timer = setTimeout(() => window.location.href = '/auth', 1000);
+      return () => clearTimeout(timer);
     }
   })
 
@@ -51,6 +54,17 @@ export default function AdminDashboard() {
 
   return (
     <Flex className="h-full neon-border mx-20 flex-col my-10 p-5 rounded bg-[var(--color-secondary)] overflow-hidden">
+      <ToastContainer
+        position="top-center"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme={theme}
+        />
       <h1 className="text-3xl font-bold mb-5 text-[var(--color-heading)]">Admin Dashboard</h1>
       <Container my="md">
         <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">

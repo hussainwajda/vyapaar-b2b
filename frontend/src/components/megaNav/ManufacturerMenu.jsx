@@ -112,32 +112,32 @@ const ManufacturerMenu = () => {
 
   return (
     <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-      <div>
-        <h1 className="text-2xl font-bold mb-2">Company Name: {profile.name}</h1>
-        <p className="text-gray-800">GST No: {profile.GST_no}</p>
-        <p className="text-gray-800">Phone: {profile.phone}</p>
+      <div> 
+        <h1 className="text-2xl text-[var(--color-heading)] font-bold mb-2">Company Name: {profile.name}</h1>
+        <p className="text-[var(--color-heading)]">GST No: {profile.GST_no}</p>
+        <p className="text-[var(--color-heading)]">Phone: {profile.phone}</p>
         {profile.address && (
-          <p className="text-gray-800">
+          <p className="text-[var(--color-heading)]">
             Address: {profile.address.line1}{profile.address.line2 && `, ${profile.address.line2}`}, {profile.address.city}, {profile.address.state} - {profile.address.pincode}
           </p>
         )}
         {profile.contact_person && (
           <>
             <h2 className="text-xl font-semibold mt-4 mb-1">Contact Person</h2>
-            <p className="text-gray-800">Name: {profile.contact_person.name}</p>
-            <p className="text-gray-800">Designation: {profile.contact_person.designation}</p>
-            <p className="text-gray-800">Email: {profile.contact_person.email}</p>
-            <p className="text-gray-800">Phone: {profile.contact_person.phone}</p>
+            <p className="text-[var(--color-heading)]">Name: {profile.contact_person.name}</p>
+            <p className="text-[var(--color-heading)]">Designation: {profile.contact_person.designation}</p>
+            <p className="text-[var(--color-heading)]">Email: {profile.contact_person.email}</p>
+            <p className="text-[var(--color-heading)]">Phone: {profile.contact_person.phone}</p>
           </>
         )}
         {profile.year_of_establishment && (
-          <p className="text-gray-800 mt-2">Year of Establishment: {profile.year_of_establishment}</p>
+          <p className="text-[var(--color-heading)] mt-2">Year of Establishment: {profile.year_of_establishment}</p>
         )}
         {profile.company_type && (
-          <p className="text-gray-800">Company Type: {profile.company_type}</p>
+          <p className="text-[var(--color-heading)]">Company Type: {profile.company_type}</p>
         )}
         {profile.website && (
-          <p className="text-gray-800">Website: {profile.website}</p>
+          <p className="text-[var(--color-heading)]">Website: {profile.website}</p>
         )}
         {profile.categories && profile.categories.length > 0 && (
           <>
@@ -153,7 +153,7 @@ const ManufacturerMenu = () => {
       <div className="text-center md:text-right">
         <button
           onClick={() => navigate("/dashboard")}
-          className="bg-green-600 text-white px-6 py-3 rounded-xl text-lg hover:bg-green-700 transition cursor-pointer"
+          className="bg-[var(--color-primary)] text-white px-6 py-3 rounded-xl text-lg hover:bg-[var(--color-secondary)] transition cursor-pointer"
         >
           Go to Dashboard
         </button>

@@ -42,14 +42,17 @@ const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID;
 const CLIENT_ID = process.env.COGNITO_CLIENT_ID;
 
 // storage configuration for document upload
+const FRONTEND_UPLOAD_DIR = path.join(__dirname, '../frontend/public/uploads');
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const username = req.body.username || 'default_user';
     const isOther = file.fieldname === 'other_documents';
-    const basePath = path.join(__dirname, 'uploaded_document', username, isOther ? 'other_documents' : '');
-    
-    fs.mkdirSync(basePath, { recursive: true });
-    cb(null, basePath);
+
+    const uploadPath = path.join(FRONTEND_UPLOAD_DIR, username, isOther ? 'other_documents' : '');
+
+    fs.mkdirSync(uploadPath, { recursive: true });
+    cb(null, uploadPath);
   },
   filename: function (req, file, cb) {
     const label = file.originalname.split('.')[0].replace(/\s+/g, '_');
@@ -103,10 +106,47 @@ const manufacturerProfileSchema = new mongoose.Schema({
   },
 
   is_verified: { type: Boolean, default: false },
+  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
   created_at: { type: Date, default: Date.now },
 });
 
 const ManufacturerProfile = mongoose.model('ManufacturerProfile', manufacturerProfileSchema);
+
+  const profileTrackSchema = new mongoose.Schema({
+    totalProfileRequest: {
+      type: Number,
+      default: 0,
+      required: true,
+    },
+    totalPending: {
+      type: Number,
+      default: 0,
+      required: true,
+    },
+    totalApproved: {
+      type: Number,
+      default: 0,
+      required: true,
+    },
+    totalRejected: {
+      type: Number,
+      default: 0,
+      required: true,
+    }
+  }, { timestamps: true });
+
+  const ProfileTrack = mongoose.model('ProfileTrack', profileTrackSchema);
+
+const notificationSchema = new mongoose.Schema({
+  userId: { type: String , ref: 'User', required: true },
+  title: { type: String, required: true },
+  message: { type: String, required: true },
+  type: { type: String, enum: ['approval', 'rejection', 'general'], required: true },
+  createdAt: { type: Date, default: Date.now },
+  read: { type: Boolean, default: false }
+});
+
+const Notification = mongoose.model('Notification', notificationSchema);
 
 // Registration Endpoint
 app.post('/api/auth/register', async (req, res) => {
@@ -306,13 +346,13 @@ app.post('/api/upload', upload.fields([
   { name: 'gst_certificate', maxCount: 1 },
   { name: 'pan_card', maxCount: 1 },
   { name: 'incorporation_certificate', maxCount: 1 },
-  { name: 'other_documents', maxCount: 10 } // multiple
+  { name: 'other_documents', maxCount: 10 }
 ]), (req, res) => {
   const fileUrls = {};
 
   Object.keys(req.files).forEach(field => {
     fileUrls[field] = req.files[field].map(file => {
-      const relativePath = `/uploaded_document/${req.body.username}/${field === 'other_documents' ? 'other_documents/' : ''}${file.filename}`;
+      const relativePath = `/uploads/${req.body.username}/${field === 'other_documents' ? 'other_documents/' : ''}${file.filename}`;
       return relativePath;
     });
   });
@@ -320,18 +360,67 @@ app.post('/api/upload', upload.fields([
   res.status(200).json({ uploaded: fileUrls });
 });
 
-// API route
 app.post('/api/create-profile', async (req, res) => {
+  let profile = null;
+
   try {
-    const profile = new ManufacturerProfile(req.body);
+    // 1. Save profile to DB
+    profile = new ManufacturerProfile(req.body.updatedForm);
     await profile.save();
+
+    // 2. Ensure ProfileTrack exists
+    const trackExists = await ProfileTrack.findOne();
+    if (!trackExists) {
+      await ProfileTrack.create({});
+    }
+
+    // 3. Update tracking stats
+    const updateResult = await ProfileTrack.updateOne(
+      {},
+      {
+        $inc: {
+          totalProfileRequest: 1,
+          totalPending: 1
+        }
+      }
+    );
+
+    // Check if the update actually modified any document
+    if (updateResult.modifiedCount === 0 && updateResult.matchedCount === 0) {
+      throw new Error('Failed to update ProfileTrack');
+    }
+
     res.status(200).json({ message: 'Profile created successfully.' });
+
   } catch (error) {
-    console.error('Error saving profile:', error);
-    res.status(500).json({ error: 'Failed to create profile.' });
+    console.error('Error creating profile:', error.message);
+
+    // Cleanup Step 1: Delete profile from DB if it was saved
+    if (profile && profile._id) {
+      try {
+        await ManufacturerProfile.findByIdAndDelete(profile._id);
+        console.log('Rolled back saved profile.');
+      } catch (deleteErr) {
+        console.error('Failed to delete saved profile:', deleteErr.message);
+      }
+    }
+
+    // Cleanup Step 2: Delete uploaded files (if any)
+    const username = req.body.username || 'default_user';
+    const uploadDir = path.join(__dirname, '../frontend/public/uploads', username);
+    
+    try {
+      if (fs.existsSync(uploadDir)) {
+        fs.rmSync(uploadDir, { recursive: true, force: true });
+        console.log('Deleted uploaded files.');
+      }
+    } catch (fileErr) {
+      console.error('Failed to delete uploaded files:', fileErr.message);
+    }
+
+    res.status(500).json({ error: 'Failed to create profile. Changes have been rolled back.' });
   }
 });
-
 
 app.get("/api/getProfile", async (req, res) => {
   try {
@@ -342,6 +431,97 @@ app.get("/api/getProfile", async (req, res) => {
     } else {
       res.json({ message: "Manufacturer profile does not exist", status: 404 });
     }
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Something went wrong" });
+  }
+});
+
+app.get("/api/admin/profiles", async (req, res) => {
+  try {
+    const manufacturerProfiles = await ManufacturerProfile.find();
+    res.json({ message: "Manufacturer profiles fetched successfully", data: manufacturerProfiles, status: 200 });
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Something went wrong" });
+  }
+});
+
+app.post("/api/admin/approveProfile", async (req, res) => {
+  try {
+    const profileId = req.body.profileId;
+    const manufacturerProfile = await ManufacturerProfile.findById(profileId);
+    if (manufacturerProfile) {
+      manufacturerProfile.status = "approved";
+      manufacturerProfile.is_verified = true;
+      await manufacturerProfile.save();
+      await Notification.create({
+        userId: manufacturerProfile.email,
+        title: 'Profile Approved',
+        message: 'Congratulations! Your profile is approved. You can now post products.',
+        type: 'approval'
+      });
+      res.json({ message: "Manufacturer profile approved successfully", status: 200 });
+    } else {
+      res.json({ message: "Manufacturer profile not found", status: 404 });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Something went wrong" });
+  }
+});
+
+app.post("/api/admin/rejectProfile", async (req, res) => {
+  try {
+    const profileId = req.body.profileId;
+    const reason = req.body.reason;
+    const manufacturerProfile = await ManufacturerProfile.findById(profileId);
+    if (manufacturerProfile) {
+      manufacturerProfile.status = "rejected";
+      await manufacturerProfile.save();
+      await Notification.create({
+        userId: manufacturerProfile.email,
+        title: 'Profile Rejected',
+        message: `Your profile was rejected. Reason: ${reason}`,
+        type: 'rejection'
+      });
+      res.json({ message: "Manufacturer profile rejected successfully", status: 200 });
+    } else {
+      res.json({ message: "Manufacturer profile not found", status: 404 });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Something went wrong" });
+  }
+});
+
+app.get("/api/notifications/:userId", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const notifications = await Notification.find({ userId: userId });
+    res.json(notifications);
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Something went wrong" });
+  }
+});
+
+app.put("/api/notifications/read/:notificationId", async (req, res) => {
+  try {
+    const notificationId = req.params.notificationId;
+    const notification = await Notification.findById(notificationId);
+    if (notification) {
+      notification.read = true;
+      await notification.save();
+      res.json({ message: "Notification marked as read successfully", status: 200 });
+    } else {
+      res.json({ message: "Notification not found", status: 404 });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Something went wrong" });
+  }
+});
+
+app.get("/api/notifications/unread/count/:userId", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const notifications = await Notification.find({ userId: userId, read: false });
+    res.json({ count: notifications.length });
   } catch (error) {
     res.status(500).json({ message: error.message || "Something went wrong" });
   }

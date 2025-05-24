@@ -8,7 +8,7 @@ import AdminDashboard from '../components/admin/adminControlPanel/adminDashboard
 const AdminLayout = () => {
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <NavbarMinimalColored /> {/* The admin sidebar */}
+      <NavbarMinimalColored />
       <div style={{ flexGrow: 1, padding: '20px' }}>
         {/* Outlet will render the child routes' components */}
         <Outlet />

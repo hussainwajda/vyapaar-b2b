@@ -10,6 +10,16 @@ import AdminLayout from './layouts/AdminLayout';
 import AdminDashboard from './components/admin/adminControlPanel/adminDashboard';
 import AdminManufacturer from './components/admin/adminControlPanel/AdminManufacturer';
 
+import Layout from "@/components/layouts/layout";
+// import NotFound from './components/not-found';
+import Dashboard from './components/manufacturer/Dashboard';
+import Products from './components/manufacturer/products';
+import Requests from './components/manufacturer/requests';
+import Orders from './components/manufacturer/orders';
+import Messages from './components/manufacturer/messages';
+import Analytics from './components/manufacturer/Analytics';
+import Notifications from './components/manufacturer/notifications';
+// import Settings from './components/manufacturer/settings';
 import '@mantine/core/styles.css';
 
 const App = () => {
@@ -24,10 +34,11 @@ const App = () => {
 const LayoutWrapper = () => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isManufacturerRoute = location.pathname.startsWith('/manufacturer');
 
   return (
     <>
-      {!isAdminRoute && <Navabar />}
+      {!isAdminRoute && !isManufacturerRoute && <Navabar />}
       <Routes>
         {/* Public Routes */}
         <Route path="/auth" element={<AuthPage />} />
@@ -41,7 +52,22 @@ const LayoutWrapper = () => {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="manufacturer" element={<AdminManufacturer />} />
         </Route>
+
+        <Route path="/manufacturer" element={<Layout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard key={location.pathname} />} />
+            <Route path="products" element={<Products key={location.pathname}/>} />
+            <Route path="requests" element={<Requests key={location.pathname} />} />
+            <Route path="orders" element={<Orders />} />
+            <Route path="messages" element={<Messages />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="notifications" element={<Notifications />} />
+            {/*<Route path="settings" element={Settings} />
+            <Route element={NotFound} /> */}
+          </Route>
       </Routes>
+
+      
     </>
   );
 };

@@ -152,7 +152,7 @@ const ManufacturerMenu = () => {
       </div>
       <div className="text-center md:text-right">
         <button
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate("/manufacturer")}
           className="bg-[var(--color-primary)] text-white px-6 py-3 rounded-xl text-lg hover:bg-[var(--color-secondary)] transition cursor-pointer"
         >
           Go to Dashboard

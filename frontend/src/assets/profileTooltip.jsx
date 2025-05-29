@@ -9,7 +9,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import NotificationModal from './NotificationModal'; // Adjust the path as needed
 import axios from 'axios';
-
+import {User} from "lucide-react"
 const ProfileMenu = () => { // Renamed from ProfileToolTip for clarity
   const ServerUrl = "http://localhost:3001";
   const { user, logout } = useAuth();
@@ -50,12 +50,13 @@ const ProfileMenu = () => { // Renamed from ProfileToolTip for clarity
       <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <button
-            className="flex items-center space-x-2 text-[var(--color-heading)] hover:text-purple-600 font-medium cursor-pointer md:mr-2"
+            className="flex items-center space-x-2 font-medium hover:text-purple-600 cursor-pointer md:mr-2"
             aria-label="User profile menu"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
+            {/* <User size={20} strokeWidth={1.5} className="text-red] hover:text-purple-600 font-medium cursor-pointer md:mr-2" /> */}
           </button>
         </DropdownMenuTrigger>
 

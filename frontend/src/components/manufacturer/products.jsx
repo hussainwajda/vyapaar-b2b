@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, RefreshCcw } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useEffect } from "react";
 import axios from "axios";
@@ -72,12 +72,15 @@ export default function Products() {
           <p className="text-sm text-slate-500">Manage your product catalog</p>
         </div>
         <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+          <div className="flex items-center space-x-2">
+          <RefreshCcw className="cursor-pointer text-[var(--color-primary)] mt-1" onClick={() => window.location.reload()} />
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
               Add Product
             </Button>
           </DialogTrigger>
+          </div>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Add New Product</DialogTitle>

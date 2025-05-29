@@ -90,6 +90,27 @@ const uploadS3 = multer({
   }
 });
 
+const getCategoryNamefromID = async (categoryID) => {
+  const SAMPLE_CATEGORIES = [
+    { id: "1", name: "Electronics & Components", icon: "📱" },
+    { id: "2", name: "Apparel & Fashion", icon: "👕" },
+    { id: "3", name: "Home & Garden", icon: "🏡" },
+    { id: "4", name: "Health & Beauty", icon: "💊" },
+    { id: "5", name: "Machinery & Equipment", icon: "🔨" },
+    { id: "6", name: "Automotive Parts", icon: "🚗" },
+    { id: "7", name: "Construction Materials", icon: "🏗️" },
+    { id: "8", name: "Food & Beverages", icon: "🍔" },
+    { id: "9", name: "Packaging & Printing", icon: "📦" },
+    { id: "10", name: "Sports & Entertainment", icon: "🎮" },
+    { id: "11", name: "Textiles & Leather", icon: "👔" },
+    { id: "12", name: "Tools & Hardware", icon: "🛠️" },
+    { id: "13", name: "Chemical & Plastics", icon: "🧪" },
+    { id: "14", name: "Agriculture & Farming", icon: "🌾" },
+    { id: "15", name: "Office & School Supplies", icon: "📚" },
+  ];
+  const category = SAMPLE_CATEGORIES.find((category) => category.id === categoryID);
+  return category ? category.name : null;
+}
 
 // Registration Endpoint
 app.post('/auth/register', async (req, res) => {
@@ -596,7 +617,6 @@ app.post("/upload-media", uploadS3.array("files", 10), (req, res) => {
 });
 
 app.post("/add-product", async (req, res) => {
-  console.log("incoming data", req.body);
   try {
     const {
       manufacturerEmail,
@@ -630,13 +650,12 @@ app.post("/add-product", async (req, res) => {
     ) {
       return res.status(400).json({ message: "Required fields missing" });
     }
-
     // Create product object
     const product = new Product({
       manufacturerEmail,
       title,
       description,
-      category,
+      category: await getCategoryNamefromID(category),
       price,
       minOrderQuantity,
       stock,
@@ -663,6 +682,106 @@ app.post("/add-product", async (req, res) => {
   }
 });
 
+app.get("/product/:id", async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const product = await Product.findById(productId);
+    const convertDecimal = (value) => {
+      if (value && typeof value === 'object' && '$numberDecimal' in value) {
+        return parseFloat(value.$numberDecimal);
+      }
+      return value;
+    };
+
+    // Convert main price
+    product.price = convertDecimal(product.price);
+    
+    // Convert pricing tiers
+    if (product.pricingTiers) {
+      product.pricingTiers = product.pricingTiers.map(tier => ({
+        ...tier,
+        price: convertDecimal(tier.price)
+      }));
+    }
+    if (product) {
+      res.json({ message: "Product fetched successfully", data: product, status: 200 });
+    } else {
+      res.json({ message: "Product not found", status: 404 });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Something went wrong" });
+  }
+});
+
+app.get("/manufacturer/:email", async (req, res) => {
+  try {
+    const manufacturerId = req.params.email;
+    const manufacturer = await ManufacturerProfile.findOne({ email: manufacturerId }); 
+    if (manufacturer) {
+      res.json({ message: "Manufacturer fetched successfully", data: manufacturer , status: 200 });
+    } else {
+      res.json({ message: "Manufacturer not found", status: 404 });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Something went wrong" });
+  }
+});
+
+app.get('/products/search-suggestions', async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) return res.status(400).json({ error: 'Missing search query' });
+
+    const regex = new RegExp(q, 'i'); // case-insensitive partial match
+
+    const suggestions = await Product.find({
+      $or: [
+        { title: regex },
+        { category: regex },
+        { tags: regex },
+      ]
+    }).limit(10).select('title category tags images'); // minimize data
+
+    res.json({ suggestions: suggestions });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server Error' });
+  }
+});
+
+// Route: GET /api/product/trade/search?searchKeywords=...
+
+app.get("/product/trade/search", async (req, res) => {
+  try {
+    const searchKeywords = (req.query.searchKeywords || "").toString().trim();
+
+    // Return empty result if no search string
+    if (!searchKeywords) {
+      return res.status(200).json({ message: "No search keywords provided", products: [] });
+    }
+
+    const regex = new RegExp(searchKeywords, "i"); // case-insensitive
+
+    const products = await Product.find({
+      $or: [
+        { title: regex },
+        { category: regex },
+        { tags: regex }
+      ]
+    })
+      .sort({ createdAt: -1 }) // Sort by most recent
+      .limit(50); // Optional limit
+
+    res.status(200).json({
+      message: "Products fetched successfully",
+      products,
+      status: 200
+    });
+  } catch (error) {
+    console.error("Search error:", error);
+    res.status(500).json({ message: error.message || "Something went wrong", status: 500 });
+  }
+});
 
 
 module.exports = app;

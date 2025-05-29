@@ -18,7 +18,7 @@ export const manufacturers = pgTable("manufacturers", {
 });
 
 export const products = pgTable("products", {
-  id: serial("id").primaryKey(),
+  _id: serial("id").primaryKey(),
   manufacturerId: integer("manufacturer_id").references(() => manufacturers.id).notNull(),
   title: text("title").notNull(),
   description: text("description"),

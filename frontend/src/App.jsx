@@ -9,11 +9,13 @@ import ManufacturerStepper from './components/manufacturer/BuildProfile';
 import AdminLayout from './layouts/AdminLayout';
 import AdminDashboard from './components/admin/adminControlPanel/adminDashboard';
 import AdminManufacturer from './components/admin/adminControlPanel/AdminManufacturer';
-
+import Checkout from './components/checkout/checkoutPage';
+import ProductSearch from './components/products/productSearch';
 import Layout from "@/components/layouts/layout";
 // import NotFound from './components/not-found';
 import Dashboard from './components/manufacturer/Dashboard';
 import Products from './components/manufacturer/products';
+import ProductPage from './components/products/productPage';
 import Requests from './components/manufacturer/requests';
 import Orders from './components/manufacturer/orders';
 import Messages from './components/manufacturer/messages';
@@ -45,6 +47,9 @@ const LayoutWrapper = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/build-profile" element={<ManufacturerStepper />} />
+        <Route path='product/:id' element={<ProductPage />} />
+        <Route path='/product/trade/search' element={<ProductSearch />} />
+        <Route path="/checkout/:id" element={<Checkout />} />
 
         {/* Admin Layout with nested routes */}
         <Route path="/admin" element={<AdminLayout />}>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import type { Product } from "../../shared/schema";
+import { useNavigate } from "react-router-dom";
 
 interface ProductCardProps {
   product: Product;
@@ -12,6 +13,8 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, onEdit }: ProductCardProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  
 
   const getStatusBadge = (status: string, stock: number) => {
     if (stock < 5) {
@@ -24,13 +27,16 @@ export default function ProductCard({ product, onEdit }: ProductCardProps) {
 
   // Safely get the display price
   const displayPrice = product.price && typeof product.price === 'object' && '$numberDecimal' in product.price
-    ? product.price.$numberDecimal // Access the value from the $numberDecimal key
-    : product.price; // Fallback if it's already a direct number/string (though unlikely given the error)
+    ? product.price.$numberDecimal
+    : product.price;
 
   return (
     <Card className="product-card neon-border">
       <CardContent className="p-4">
-        <div className="flex items-center space-x-4">
+        <div 
+          className="flex items-center space-x-4"
+          onClick={() => navigate(`/product/${product._id}`)}
+        >
           <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
             {product.images?.[0] ? (
               <img
@@ -48,7 +54,7 @@ export default function ProductCard({ product, onEdit }: ProductCardProps) {
             <p className="text-sm text-slate-500">{product.category}</p>
             <div className="flex items-center space-x-4 mt-1">
               {/* FIX APPLIED HERE: Using displayPrice */}
-              <span className="text-sm font-medium text-slate-900">${displayPrice}</span>
+              <span className="text-sm font-medium text-slate-900">Rs.{displayPrice}</span>
               <span className="text-xs text-slate-500">
                 {product.stock ? `In Stock (${product.stock})` : "Out of Stock"}
               </span>

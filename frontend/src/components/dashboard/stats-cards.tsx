@@ -40,7 +40,7 @@ export default function StatsCards({ stats }: StatsCardsProps) {
     },
     {
       title: "Revenue (MTD)",
-      value: `$${(stats.totalRevenue / 1000).toFixed(1)}K`,
+      value: `₹${(stats.totalRevenue / 1000).toFixed(1)}K`,
       subtitle: "+24% from last month",
       icon: DollarSign,
       iconBg: "bg-purple-100",

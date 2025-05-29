@@ -7,9 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { toast, ToastContainer } from "react-toastify";
-import { to } from "@react-spring/web";
 import ProductCard from "../products/product-card";
 import { useLocation } from 'react-router-dom';
+import { RefreshCcw } from "lucide-react"
 
 export default function Dashboard() {
   const ServerUrl = "http://localhost:3001";
@@ -29,7 +29,6 @@ export default function Dashboard() {
         const response = await axios.get(`${ServerUrl}/api/dashboard/stats`,{
           params: {email: email}
         });
-        toast.success("Dashboard stats loaded");
         setStats(response.data.data);
       } catch (err) {
         setError("Failed to load dashboard stats");
@@ -68,7 +67,6 @@ export default function Dashboard() {
     toast.error(error || "Failed to load dashboard data");
     return (
       <div className="flex items-center justify-center h-64">
-        <ToastContainer />
         <div className="text-lg text-red-600">{error || "Failed to load dashboard data"}</div>
       </div>
     );
@@ -104,9 +102,12 @@ export default function Dashboard() {
           <Card className="bg-[var(--color-heading)] neon-border text-[var(--color-primary)]">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg font-semibold text-slate-900">Recent Products</CardTitle>
-              <Link to="/products" className="text-primary hover:text-primary/80 text-sm font-medium">
-                View All
-              </Link>
+              <div className="flex items-center space-x-2">
+                <RefreshCcw className="cursor-pointer" onClick={() => window.location.reload()} />
+                <Link to="/manufacturer/products" className="text-primary hover:text-primary/80 text-sm font-medium">
+                  View All
+                </Link>
+              </div>
             </CardHeader>
             <CardContent className="p-6">
               {productsLoading ? (

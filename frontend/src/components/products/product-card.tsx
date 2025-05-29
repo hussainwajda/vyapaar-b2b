@@ -2,9 +2,10 @@ import { Edit, Trash2, Package } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { toast, ToastContainer } from "react-toastify";
 import type { Product } from "../../shared/schema";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 interface ProductCardProps {
   product: Product;
@@ -12,7 +13,6 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onEdit }: ProductCardProps) {
-  const { toast } = useToast();
   const navigate = useNavigate();
   
 
@@ -25,6 +25,14 @@ export default function ProductCard({ product, onEdit }: ProductCardProps) {
       : <Badge variant="outline" className="bg-gray-50 text-gray-700">Inactive</Badge>;
   };
 
+  const handleDelete = () => {
+    if (window.confirm("Are you sure you want to delete this product?")) {
+      // Delete the product
+      const response = axios.delete(`${import.meta.env.VITE_SERVER_URL}/api/product/${product._id}`);
+      toast.success("Product deleted successfully");
+      window.location.reload();
+    }
+  }
   // Safely get the display price
   const displayPrice = product.price && typeof product.price === 'object' && '$numberDecimal' in product.price
     ? product.price.$numberDecimal
@@ -35,9 +43,8 @@ export default function ProductCard({ product, onEdit }: ProductCardProps) {
       <CardContent className="p-4">
         <div 
           className="flex items-center space-x-4"
-          onClick={() => navigate(`/product/${product._id}`)}
         >
-          <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <div onClick={() => navigate(`/product/${product._id}`)} className="w-16 h-16 cursor-pointer bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
             {product.images?.[0] ? (
               <img
                 src={product.images[0]}
@@ -50,7 +57,7 @@ export default function ProductCard({ product, onEdit }: ProductCardProps) {
           </div>
 
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-medium text-slate-900 truncate">{product.title}</h4>
+            <h4 onClick={() => navigate(`/product/${product._id}`)} className="text-sm cursor-pointer font-medium text-slate-900 truncate">{product.title}</h4>
             <p className="text-sm text-slate-500">{product.category}</p>
             <div className="flex items-center space-x-4 mt-1">
               {/* FIX APPLIED HERE: Using displayPrice */}
@@ -75,6 +82,7 @@ export default function ProductCard({ product, onEdit }: ProductCardProps) {
               size="sm"
               variant="ghost"
               className="text-slate-400 hover:text-red-600"
+              onClick={() => handleDelete(product._id)}
             >
               <Trash2 className="h-4 w-4" />
             </Button>

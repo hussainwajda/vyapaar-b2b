@@ -318,8 +318,11 @@ export default function ProductForm({ onSuccess }) {
                     <FormLabel>Product Images & Videos</FormLabel>
                     <FormControl>
                       <FileUpload
-                        value={field.value}
-                        onChange={field.onChange}
+                        value={field.value || []}
+                        onChange={(urls) => {
+                          field.onChange(urls);
+                          form.setValue('images', urls, { shouldValidate: true });
+                        }}
                         folder={getEmailFromUser()}
                         maxFiles={10}
                         acceptedTypes={['image/*', 'video/*']}

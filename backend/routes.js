@@ -12,7 +12,9 @@ const {
   Request,
   Message,
   ManuNotification,
-  Revenue 
+  Revenue,
+  Order,
+  Address 
 } = require('./schemas');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const { Upload } = require('@aws-sdk/lib-storage');
@@ -590,12 +592,27 @@ app.get("/products", async (req, res) => {
   }
 });
 
+app.delete("/product/:id", async (req, res) => {
+  
+  try {
+    const productId = req.params.id;
+    const product = await Product.findByIdAndDelete(productId);
+    if (product) {
+      res.json({ message: "Product deleted successfully", status: 200 });
+    } else {
+      res.json({ message: "Product not found", status: 404 });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Something went wrong" });
+  }
+});
+
 app.post("/upload-media", uploadS3.array("files", 10), (req, res) => {
   try {
     console.log("Received upload request");
     console.log("Files:", req.files);
 
-    const folder = req.body.folder || "general";
+    const folder = req.query.folder || "general";
 
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: "No files uploaded" });
@@ -603,10 +620,15 @@ app.post("/upload-media", uploadS3.array("files", 10), (req, res) => {
 
     console.log(`Uploaded ${req.files.length} files to folder: ${folder}`);
 
+    // Map all file locations to URLs array
     const urls = req.files.map((file) => file.location);
+    
+    console.log("Generated URLs:", urls);
+
     res.status(200).json({
       message: "Media uploaded successfully",
-      uploaded: urls,
+      uploaded: urls, // This should contain all URLs
+      count: urls.length // Add count for debugging
     });
   } catch (error) {
     console.error("Upload error:", error);
@@ -623,6 +645,7 @@ app.post("/add-product", async (req, res) => {
       title,
       description,
       category,
+      subCategory,
       price,
       minOrderQuantity,
       stock,
@@ -656,6 +679,7 @@ app.post("/add-product", async (req, res) => {
       title,
       description,
       category: await getCategoryNamefromID(category),
+      subCategory,
       price,
       minOrderQuantity,
       stock,
@@ -783,5 +807,55 @@ app.get("/product/trade/search", async (req, res) => {
   }
 });
 
+app.get("/getAddresses", async (req, res) => {
+  try {
+    const addresses = await Address.find({ userId: req.query.userId });
+    res.json({ success: true, data: addresses });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Error fetching addresses", error: err });
+  }
+});
+
+app.post("/add-address", async (req, res) => {
+  try {
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ success: false, message: "Missing userId in query parameters" });
+    }
+
+    const {
+      name,
+      company,
+      address,
+      city,
+      state,
+      zipCode,
+      country,
+      phone,
+      isDefault
+    } = req.body;
+
+    const newAddress = new Address({
+      userId,
+      name,
+      company,
+      address,
+      city,
+      state,
+      zipCode,
+      country,
+      phone,
+      isDefault
+    });
+
+    await newAddress.save();
+
+    res.status(201).json({ success: true, message: "Address added successfully", data: newAddress });
+  } catch (err) {
+    console.error("Error adding address:", err);
+    res.status(500).json({ success: false, message: "Internal Server Error", error: err.message });
+  }
+});
 
 module.exports = app;

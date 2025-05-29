@@ -49,7 +49,7 @@ const LayoutWrapper = () => {
         <Route path="/build-profile" element={<ManufacturerStepper />} />
         <Route path='product/:id' element={<ProductPage />} />
         <Route path='/product/trade/search' element={<ProductSearch />} />
-        <Route path="/checkout/:id" element={<Checkout />} />
+        <Route path="/checkout" element={<Checkout />} />
 
         {/* Admin Layout with nested routes */}
         <Route path="/admin" element={<AdminLayout />}>

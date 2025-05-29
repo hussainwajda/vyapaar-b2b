@@ -1,15 +1,16 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "../../context/AuthContext";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import {getTaxRate} from "../../assets/taxCalc";
 import { 
   ArrowLeft, 
   MapPin, 
@@ -22,59 +23,17 @@ import {
   Package,
   Truck
 } from "lucide-react";
-
-// Mock checkout data
-const mockCartItems = [
-  {
-    id: 1,
-    title: "Industrial Precision CNC Lathe Machine",
-    price: 12500,
-    quantity: 2,
-    image: "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=100&h=100",
-    supplier: "ACME Manufacturing",
-    leadTime: "15-20 days"
-  },
-  {
-    id: 2,
-    title: "Electronic Control Board PCB",
-    price: 89.99,
-    quantity: 50,
-    image: "https://images.unsplash.com/photo-1581092335397-9583eb92d232?w=100&h=100",
-    supplier: "TechCorp Industries",
-    leadTime: "10-15 days"
-  }
-];
-
-const mockAddresses = [
-  {
-    id: 1,
-    name: "John Smith",
-    company: "Manufacturing Corp",
-    address: "1234 Industrial Ave",
-    city: "Houston",
-    state: "TX",
-    zipCode: "77001",
-    country: "United States",
-    phone: "+1-555-0199",
-    isDefault: true
-  },
-  {
-    id: 2,
-    name: "John Smith",
-    company: "Secondary Facility",
-    address: "5678 Factory Blvd",
-    city: "Dallas",
-    state: "TX",
-    zipCode: "75201",
-    country: "United States",
-    phone: "+1-555-0288",
-    isDefault: false
-  }
-];
+import { useLocation } from "react-router-dom";
+import axios from "axios";
+import { toast, ToastContainer } from "react-toastify";
 
 export default function Checkout() {
-  const [, setLocation] = useLocation();
+  const location = useLocation();
+  const SERVER_URL = import.meta.env.VITE_SERVER_URL;
+  const { product, quantity, price } = location.state || {};
   const [selectedAddress, setSelectedAddress] = useState("1");
+  const [isloading, setIsLoading] = useState(false);
+  const [addresses, setAddresses] = useState("1");
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [newAddress, setNewAddress] = useState({
@@ -84,13 +43,70 @@ export default function Checkout() {
     city: "",
     state: "",
     zipCode: "",
-    country: "United States",
+    country: "India",
     phone: ""
   });
+  const {getEmailFromUser} = useAuth();
 
-  const subtotal = mockCartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const shipping = 150; // Flat shipping fee
-  const tax = subtotal * 0.08; // 8% tax
+  const addAddress = async (addressData: any) => {
+  try {
+    const response = await axios.post(
+      `${SERVER_URL}/api/add-address`,
+      addressData,
+      {
+        params: {
+          userId: getEmailFromUser() // Assuming this returns user email or ID
+        }
+      }
+    );
+    toast.success("Address added successfully");
+    setShowNewAddressForm(false);
+    return response.data;
+  } catch (err) {
+    console.error("Failed to add address:", err);
+    throw err;
+  }
+};
+
+
+useEffect(() => {
+  const fetchAddresses = async () => {
+    try {
+      setIsLoading(true);
+      if (!getEmailFromUser()) {
+        return;
+      }
+      const response = await axios.get(`${SERVER_URL}/api/getAddresses`, {
+        params: {
+          userId: getEmailFromUser()
+        }
+      });
+      console.log("response",response.data);
+      setAddresses(response.data.data || []);
+      setIsLoading(false);
+    } catch (err) {
+      console.error("Failed to fetch addresses:", err);
+    }
+  };
+
+  fetchAddresses();
+}, [getEmailFromUser]);
+
+  const subtotal = price * quantity;;
+  const shipping = 150;
+  let taxPercentage = 0;
+  if (product && product.category) {
+    const taxRateString = getTaxRate(product.category, product.subCategory);
+    if (taxRateString) {
+      const match = taxRateString.match(/(\d+)%/);
+      if (match && match[1]) {
+        taxPercentage = parseFloat(match[1]) / 100;
+      } else if (taxRateString === "0%") {
+        taxPercentage = 0;
+      }
+    }
+  }
+  const tax = subtotal * taxPercentage;
   const total = subtotal + shipping + tax;
 
   const handlePlaceOrder = () => {
@@ -98,9 +114,12 @@ export default function Checkout() {
     const orderId = `ORD-${Date.now()}`;
     setLocation(`/order-confirmation/${orderId}`);
   };
+  const normalizedAddresses = Array.isArray(addresses) ? addresses : (addresses ? [addresses] : []);
+  console.log("normal",normalizedAddresses);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      <ToastContainer />
       {/* Header */}
       <div className="flex items-center space-x-4">
         <Button 
@@ -112,7 +131,7 @@ export default function Checkout() {
           Back to Products
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Checkout</h1>
+          <h1 className="text-2xl font-semibold text-[var(--color-heading)]">Checkout</h1>
           <p className="text-sm text-slate-500">Review your order and complete your purchase</p>
         </div>
       </div>
@@ -130,13 +149,14 @@ export default function Checkout() {
             </CardHeader>
             <CardContent className="space-y-4">
               <RadioGroup value={selectedAddress} onValueChange={setSelectedAddress}>
-                {mockAddresses.map((address) => (
-                  <div key={address.id} className="flex items-start space-x-3">
-                    <RadioGroupItem value={address.id.toString()} id={address.id.toString()} className="mt-1" />
-                    <Label htmlFor={address.id.toString()} className="flex-1 cursor-pointer">
+                
+                {isloading ? <p>Loading...</p> : normalizedAddresses?.map((address) => (
+                  <div key={address._id} className="flex items-start space-x-3">
+                    <RadioGroupItem value={address._id} id={address._id} className="mt-1" />
+                    <Label htmlFor={address._id} className="flex-1 cursor-pointer">
                       <div className="border rounded-lg p-4 hover:bg-slate-50 transition-colors">
                         <div className="flex items-center justify-between mb-2">
-                          <div className="font-medium text-slate-900">{address.name}</div>
+                          <div className="font-medium text-slate-900">{address?.name}</div>
                           {address.isDefault && (
                             <Badge variant="outline" className="text-xs">Default</Badge>
                           )}
@@ -157,7 +177,7 @@ export default function Checkout() {
               <Button 
                 variant="outline" 
                 onClick={() => setShowNewAddressForm(!showNewAddressForm)}
-                className="w-full"
+                className="w-full bg-[var(--color-primary)] text-[var(--color-heading)]"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add New Address
@@ -210,10 +230,34 @@ export default function Checkout() {
                           <SelectValue placeholder="Select State" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="TX">Texas</SelectItem>
-                          <SelectItem value="CA">California</SelectItem>
-                          <SelectItem value="NY">New York</SelectItem>
-                          <SelectItem value="FL">Florida</SelectItem>
+                        <SelectItem value="AP">Andhra Pradesh</SelectItem>
+                        <SelectItem value="AR">Arunachal Pradesh</SelectItem>
+                        <SelectItem value="AS">Assam</SelectItem>
+                        <SelectItem value="BR">Bihar</SelectItem>
+                        <SelectItem value="CT">Chhattisgarh</SelectItem>
+                        <SelectItem value="GA">Goa</SelectItem>
+                        <SelectItem value="GJ">Gujarat</SelectItem>
+                        <SelectItem value="HR">Haryana</SelectItem>
+                        <SelectItem value="HP">Himachal Pradesh</SelectItem>
+                        <SelectItem value="JH">Jharkhand</SelectItem>
+                        <SelectItem value="KA">Karnataka</SelectItem>
+                        <SelectItem value="KL">Kerala</SelectItem>
+                        <SelectItem value="MP">Madhya Pradesh</SelectItem>
+                        <SelectItem value="MH">Maharashtra</SelectItem>
+                        <SelectItem value="MN">Manipur</SelectItem>
+                        <SelectItem value="ML">Meghalaya</SelectItem>
+                        <SelectItem value="MZ">Mizoram</SelectItem>
+                        <SelectItem value="NL">Nagaland</SelectItem>
+                        <SelectItem value="OD">Odisha</SelectItem>
+                        <SelectItem value="PB">Punjab</SelectItem>
+                        <SelectItem value="RJ">Rajasthan</SelectItem>
+                        <SelectItem value="SK">Sikkim</SelectItem>
+                        <SelectItem value="TN">Tamil Nadu</SelectItem>
+                        <SelectItem value="TG">Telangana</SelectItem>
+                        <SelectItem value="TR">Tripura</SelectItem>
+                        <SelectItem value="UP">Uttar Pradesh</SelectItem>
+                        <SelectItem value="UT">Uttarakhand</SelectItem>
+                        <SelectItem value="WB">West Bengal</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -223,7 +267,7 @@ export default function Checkout() {
                         id="zipCode"
                         value={newAddress.zipCode}
                         onChange={(e) => setNewAddress({...newAddress, zipCode: e.target.value})}
-                        placeholder="77001"
+                        placeholder="411044"
                       />
                     </div>
                     <div>
@@ -237,8 +281,8 @@ export default function Checkout() {
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    <Button size="sm">Save Address</Button>
-                    <Button variant="outline" size="sm" onClick={() => setShowNewAddressForm(false)}>
+                    <Button size="sm" onClick={() => addAddress(newAddress)}>Save Address</Button>
+                    <Button className="bg-[var(--color-primary)] text-[var(--color-heading)]" variant="outline" size="sm" onClick={() => setShowNewAddressForm(false)}>
                       Cancel
                     </Button>
                   </div>
@@ -366,31 +410,25 @@ export default function Checkout() {
             <CardContent className="space-y-4">
               {/* Items */}
               <div className="space-y-3">
-                {mockCartItems.map((item) => (
-                  <div key={item.id} className="flex space-x-3">
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="w-16 h-16 rounded-lg object-cover bg-slate-100"
-                    />
+                {product && (
+                  <div className="flex space-x-3">
+                    <img src={product.images?.[0]} alt={product.title} className="w-16 h-16 rounded-lg object-cover bg-slate-100" />
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-slate-900 truncate">
-                        {item.title}
-                      </h4>
-                      <p className="text-xs text-slate-500">{item.supplier}</p>
+                      <h4 className="text-sm font-medium text-slate-900 truncate">{product.title}</h4>
+                      <p className="text-xs text-slate-500">{product.manufacturerEmail}</p>
                       <div className="flex items-center justify-between mt-1">
-                        <span className="text-sm text-slate-600">Qty: {item.quantity}</span>
+                        <span className="text-sm text-slate-600">Qty: {quantity}</span>
                         <span className="text-sm font-medium">
-                          ${(item.price * item.quantity).toLocaleString()}
+                          ₹{(price * quantity).toLocaleString("en-IN")}
                         </span>
                       </div>
                       <div className="flex items-center space-x-1 mt-1">
                         <Truck className="h-3 w-3 text-slate-400" />
-                        <span className="text-xs text-slate-500">{item.leadTime}</span>
+                        <span className="text-xs text-slate-500">{product.leadTime || "Lead time not available"}</span>
                       </div>
                     </div>
                   </div>
-                ))}
+                )}
               </div>
 
               <Separator />
@@ -399,20 +437,20 @@ export default function Checkout() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Subtotal</span>
-                  <span>${subtotal.toLocaleString()}</span>
+                  <span>Rs.{subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Shipping</span>
-                  <span>${shipping.toLocaleString()}</span>
+                  <span>Rs.{shipping.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Tax</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span className="text-slate-600">Tax (GST{taxPercentage * 100}%)</span>
+                  <span>Rs.{tax.toFixed(2)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-semibold">
                   <span>Total</span>
-                  <span className="text-lg">${total.toFixed(2)}</span>
+                  <span className="text-lg">Rs.{total.toFixed(2)}</span>
                 </div>
               </div>
 

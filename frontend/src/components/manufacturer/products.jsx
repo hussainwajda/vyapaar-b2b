@@ -3,6 +3,7 @@ import ProductCard from "@/components/products/product-card";
 import ProductForm from "@/components/products/product-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {toast, ToastContainer} from "react-toastify";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,6 +66,7 @@ export default function Products() {
 
   return (
     <div className="space-y-6">
+      <ToastContainer />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

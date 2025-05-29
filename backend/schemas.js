@@ -88,6 +88,7 @@ const ProductSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String },
   category: { type: String, required: true },
+  subCategory: { type: String, required: true },
   price: { type: mongoose.Types.Decimal128, required: true },
   minOrderQuantity: { type: Number, default: 1 },
   stock: { type: Number, default: 0 },
@@ -187,6 +188,40 @@ const RevenueSchema = new mongoose.Schema({
 
 const Revenue = mongoose.model("Revenue", RevenueSchema);
 
+const AddressSchema = new mongoose.Schema({
+  userId: { type: String, ref: 'User', required: true },
+  name: { type: String, required: true },
+  company: { type: String },
+  address: { type: String, required: true },
+  city: { type: String, required: true },
+  state: { type: String, required: true },
+  zipCode: { type: String, required: true },
+  country: { type: String, default: "India" },
+  phone: { type: String, required: true },
+  isDefault: { type: Boolean, default: false }
+}, { timestamps: true });
+
+const Address = mongoose.model('Address', AddressSchema);
+
+const OrderSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  product: {
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+    title: String,
+    image: String,
+    quantity: Number,
+    unitPrice: mongoose.Types.Decimal128,
+    total: mongoose.Types.Decimal128
+  },
+  shippingAddress: { type: mongoose.Schema.Types.ObjectId, ref: 'Address', required: true },
+  paymentMethod: { type: String, enum: ['card', 'trade-credit', 'bank-transfer', 'financing'], required: true },
+  status: { type: String, default: 'Pending' },
+  shippingFee: mongoose.Types.Decimal128,
+  tax: mongoose.Types.Decimal128,
+  totalAmount: mongoose.Types.Decimal128
+}, { timestamps: true });
+
+const Order = mongoose.model('Order', OrderSchema);
 
 module.exports = {
   ManufacturerProfile,
@@ -196,5 +231,7 @@ module.exports = {
   Request,
   Message,
   ManuNotification,
-  Revenue
+  Revenue,
+  Order,
+  Address
 };

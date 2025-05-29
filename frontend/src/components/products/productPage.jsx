@@ -222,7 +222,7 @@ const getCurrentPrice = () => {
                 </div>
                 <div className="flex space-x-2">
                   <Button variant="outline" size="icon">
-                    <Heart className="h-4 w-4 bg-[var(--color-primary)] hover:bg-[var(--color-heading)] text-[var(--color-heading)] hover:text-[var(--color-primary)]" />
+                    <ShoppingCart className="h-4 w-4 bg-[var(--color-primary)] hover:bg-[var(--color-heading)] text-[var(--color-heading)] hover:text-[var(--color-primary)]" />
                   </Button>
                   <Button variant="outline" size="icon">
                     <Share2 className="h-4 w-4 bg-[var(--color-primary)] hover:bg-[var(--color-heading)] text-[var(--color-heading)] hover:text-[var(--color-primary)]" />
@@ -312,7 +312,13 @@ const getCurrentPrice = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <Button 
                     className="bg-[var(--color-primary)] hover:bg-[var(--color-heading)] text-[var(--color-heading)] hover:text-[var(--color-primary)]"
-                    onClick={() => navigate(`/checkout/${product._id}`)}
+                    onClick={() => navigate('/checkout', {
+                      state: {
+                        product,
+                        quantity,
+                        price: getCurrentPrice()
+                      }
+                    })}
                   >
                     <ShoppingCart className="h-4 w-4 mr-2" />
                     Buy Now
@@ -478,14 +484,9 @@ const getCurrentPrice = () => {
             </TabsContent>
 
             <TabsContent value="specifications" className="mt-6">
-              {Object.keys(specifications).length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Object.entries(specifications).map(([key, value]) => (
-                    <div key={key} className="flex justify-between py-2 border-b border-slate-100">
-                      <span className="font-medium text-slate-900">{key}:</span>
-                      <span className="text-slate-700">{value}</span>
-                    </div>
-                  ))}
+              {product?.specifications ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">                
+                      <span className="font-medium text-slate-900">{product.specifications}</span>
                 </div>
               ) : (
                 <p className="text-slate-500">No specifications available.</p>

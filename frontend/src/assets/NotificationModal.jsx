@@ -14,7 +14,7 @@ import { useDisclosure } from '@mantine/hooks';
 import axios from 'axios';
 
 const NotificationModal = ({ userId, opened, onClose }) => {
-  const ServerUrl = 'http://localhost:3001';
+  const ServerUrl = import.meta.env.VITE_SERVER_URL;
 //   const [opened, { open, close }] = useDisclosure(false);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);

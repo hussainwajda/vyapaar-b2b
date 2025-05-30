@@ -12,7 +12,7 @@ import { useLocation } from 'react-router-dom';
 import { RefreshCcw } from "lucide-react"
 
 export default function Dashboard() {
-  const ServerUrl = "http://localhost:3001";
+  const ServerUrl = import.meta.env.VITE_SERVER_URL;
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [products, setProducts] = useState([]);

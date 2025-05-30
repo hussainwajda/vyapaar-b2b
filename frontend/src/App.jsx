@@ -23,6 +23,9 @@ import Analytics from './components/manufacturer/Analytics';
 import Notifications from './components/manufacturer/notifications';
 // import Settings from './components/manufacturer/settings';
 import '@mantine/core/styles.css';
+import OrdersPage from './components/order/myOrders';
+import OrderDetailsPage from './components/order/orderDetails';
+import RequestQuotationForm from './assets/quotationForm';
 
 const App = () => {
   return (
@@ -49,7 +52,10 @@ const LayoutWrapper = () => {
         <Route path="/build-profile" element={<ManufacturerStepper />} />
         <Route path='product/:id' element={<ProductPage />} />
         <Route path='/product/trade/search' element={<ProductSearch />} />
+        <Route path='/product/:id/request-quotation' element={<RequestQuotationForm />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route path="/my-orders" element={<OrdersPage />} />
+        <Route path="/order/:id" element={<OrderDetailsPage />} />
 
         {/* Admin Layout with nested routes */}
         <Route path="/admin" element={<AdminLayout />}>

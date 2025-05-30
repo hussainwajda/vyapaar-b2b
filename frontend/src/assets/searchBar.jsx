@@ -78,7 +78,7 @@ const SearchBar = () => {
 
       <p className="mt-4 text-gray-200">Frequently searched:</p>
       <div className="mt-2 flex flex-wrap gap-2">
-        {["Steel Pipes", "Electronic Parts", "Machinery", "Office Supplies"].map((item, index) => (
+        {["Iphone", "Split Ac", "buds", "Machinery", "Keyboard"].map((item, index) => (
           <button
             key={index}
             onClick={() => handleSuggestionClick(item)}

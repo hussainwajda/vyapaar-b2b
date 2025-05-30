@@ -18,7 +18,7 @@ interface HeaderProps {
 }
 
 export default function Header({ onToggleSidebar }: HeaderProps) {
-  const ServerUrl = "http://localhost:3001";
+  const ServerUrl = import.meta.env.VITE_SERVER_URL;
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);

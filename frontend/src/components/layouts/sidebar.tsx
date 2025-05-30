@@ -33,7 +33,7 @@ export default function Sidebar({ onClose }) {
   const location = useLocation();
   const { user, getEmailFromUser } = useAuth();
   const userEmail = getEmailFromUser();
-  const ServerUrl = "http://localhost:3001";  
+  const ServerUrl = import.meta.env.VITE_SERVER_URL;  
   const [manufacturer, setManufacturer] = useState(null);
   const [requests, setRequests] = useState([]);
   const [messages, setMessages] = useState([]);

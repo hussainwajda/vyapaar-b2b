@@ -76,7 +76,7 @@ const Navbar = () => {
               </li>
               <li>
                 <Link
-                  to="/retailer/orders"
+                  to="/my-orders"
                   className="text-sm text-[var(--color-heading)] hover:text-[var(--color-primary)]"
                 >
                   Manage Orders

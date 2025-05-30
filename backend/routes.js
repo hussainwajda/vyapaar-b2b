@@ -4,12 +4,13 @@ const path = require('path');
 const crypto = require('crypto');
 const AWS = require('aws-sdk');
 const multerS3 = require('multer-s3');
+const Razorpay = require("razorpay");
 const { 
   ManufacturerProfile, 
   ProfileTrack, 
   Notification,
   Product,
-  Request,
+  QuotationRequest,
   Message,
   ManuNotification,
   Revenue,
@@ -19,6 +20,10 @@ const {
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const { Upload } = require('@aws-sdk/lib-storage');
 
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET
+});
 
 const app = express();
 app.use('/uploaded_document', express.static(path.join(__dirname, 'uploaded_document')));
@@ -526,7 +531,7 @@ app.get("/manufacturerProfile", async (req, res) => {
 app.get("/requests", async (req, res) => {
   try {
     const email = req.query.email;
-    const requests = await Request.find({ email: email });
+    const requests = await QuotationRequest.find({ receiverId: email });
     res.json({ message: "Requests fetched successfully", data: requests, status: 200 });
   } catch (error) {
     res.status(500).json({ message: error.message || "Something went wrong" });
@@ -560,7 +565,7 @@ app.get("/dashboard/stats", async (req, res) => {
     // Parallel DB queries
     const [products, requests, messages, notifications] = await Promise.all([
       Product.find({ email }),
-      Request.find({ receiverId: email }),
+      QuotationRequest.find({ receiverId: email }),
       Message.find({ receiverId: email }),
       ManuNotification.find({ userId: email }),
     ]);
@@ -857,5 +862,189 @@ app.post("/add-address", async (req, res) => {
     res.status(500).json({ success: false, message: "Internal Server Error", error: err.message });
   }
 });
+
+app.post("/create-order", async (req, res) => {
+  const { amount } = req.body;
+
+  const options = {
+    amount: amount * 100, // paise
+    currency: "INR",
+    receipt: `receipt_${Date.now()}`
+  };
+
+  try {
+    const order = await razorpay.orders.create(options);
+    res.json(order);
+  } catch (error) {
+    console.error("Error creating Razorpay order", error);
+    res.status(500).json({ error: "Failed to create order" });
+  }
+});
+
+app.post("/submit-order", async (req, res) => {
+  try {
+    const {
+      userId,
+      product,
+      shippingAddress,
+      shipping_type,
+      paymentMethod,
+      shippingFee,
+      tax,
+      totalAmount,
+      razorpayPaymentId
+    } = req.body;
+
+    const newOrder = new Order({
+      userId,
+      product,
+      shippingAddress,
+      paymentMethod,
+      shipping_type,
+      paymentStatus: "Paid",
+      shippingStatus: "Pending",
+      trackingNumber: "", // You can generate one later
+      shippingFee,
+      tax,
+      totalAmount,
+      status: "Confirmed"
+    });
+
+    await newOrder.save();
+    res.status(201).json({ message: "Order saved", orderId: newOrder._id });
+  } catch (err) {
+    console.error("Failed to save order", err);
+    res.status(500).json({ error: "Failed to submit order" });
+  }
+});
+
+app.get("/orders", async (req, res) => {
+  try {
+    userEmail = req.query.email;
+    const orders = await Order.find({ userId: userEmail });
+    if (orders.length > 0) {
+      res.json({message: "Orders fetched successfully", orders});
+    }
+  } catch (err) {
+    console.error("Failed to fetch orders", err);
+    res.status(500).json({ error: "Failed to fetch orders" });
+  }
+});
+
+app.get("/order/:orderId", async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+    const order = await Order.findById(orderId);
+    if (order) {
+      res.json({message: "Order fetched successfully", order});
+    }
+  } catch (err) {
+    console.error("Failed to fetch order", err);
+    res.status(500).json({ error: "Failed to fetch order" });
+  }
+});
+
+app.post("/quotations", async (req, res) => {
+  try {
+
+    const {
+      senderId,
+      senderName,
+      message,
+      productInterest,
+      quantity,
+      budget,
+      deliveryLocation,
+      productId
+    } = req.body;
+
+    console.log(req.body);  
+
+    const newRequest = new QuotationRequest({
+      senderId,
+      senderName,
+      message,
+      productInterest,
+      productId,
+      quantity,
+      budget,
+      deliveryLocation
+    });
+
+    await newRequest.save();
+
+    res.status(201).json({ 
+      success: true,
+      data: newRequest
+    });
+  } catch (error) {
+    console.error("Error creating quotation request:", error);
+    res.status(500).json({ 
+      success: false,
+      message: error.message || "Failed to create quotation request"
+    });
+  }
+});
+
+// app.get('/orders/manufacturer', async (req, res) => {
+//   try {
+//     const { userEmail } = req.query;
+
+//     if (!userEmail) {
+//       return res.status(400).json({ message: 'Manufacturer email is required' });
+//     }
+
+    // Find the manufacturer's products first
+    // 1. First find all products by this manufacturer
+// const manufacturerProducts = await Product.find(
+//   { manufacturerEmail: userEmail },
+//   { _id: 1 } // Only get the IDs
+// );
+
+// if (!manufacturerProducts.length) {
+//   return res.status(200).json([]);
+// }
+
+// const productIds = manufacturerProducts.map(p => p._id);
+
+// // 2. Debug: Verify product IDs
+// console.log('Manufacturer Product IDs:', productIds);
+
+// // 3. Find orders containing these products
+// const orders = await Order.find({
+//   'product.productId': { $in: productIds }
+// });
+
+// // 4. Debug: Check raw orders before processing
+// console.log('Raw Orders:', orders);
+
+// // 5. Format the orders for response
+// const formattedOrders = orders.map(order => {
+//   const product = order.product;
+//   return {
+//     ...order.toObject(),
+//     _id: order._id,
+//     product: {
+//       ...product,
+//       title: product.productId?.title || 'Unknown Product',
+//       image: product.productId?.images?.[0] || null,
+//       productId: product.productId?._id || product.productId
+//     },
+//     user: order.userId,
+//     userId: order.userId?._id || order.userId
+//   };
+// });
+
+// // 6. Debug: Check final output
+// console.log('Formatted Orders:', formattedOrders);
+
+// res.status(200).json(formattedOrders);
+
+//     res.status(200).json(formattedOrders);
+//   } catch (error) {
+//     console.error('Error fetching manufacturer orders:', error);
+//     res.status(500).json({ message: 'Server error while fetching orders' });
+//   }
+// });
 
 module.exports = app;

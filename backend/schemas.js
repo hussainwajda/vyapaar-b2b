@@ -83,6 +83,21 @@ const notificationSchema = new mongoose.Schema({
 
 const Notification = mongoose.model('Notification', notificationSchema);
 
+const pricingTierSchema = new mongoose.Schema({
+  minQty: {
+    type: Number,
+    required: true
+  },
+  maxQty: {
+    type: Number,
+    required: true
+  },
+  price: {
+    type: mongoose.Schema.Types.Decimal128,
+    required: true
+  }
+});
+
 const ProductSchema = new mongoose.Schema({
   manufacturerEmail: { type: String, ref: "Manufacturer", required: true },
   title: { type: String, required: true },
@@ -98,11 +113,11 @@ const ProductSchema = new mongoose.Schema({
   status: { type: String, default: "active", enum: ["active", "inactive", "draft"] },
 
   // JSON strings converted to nested structures
-  pricingTiers: [{
-    minQty: Number,
-    maxQty: Number,
-    price: mongoose.Types.Decimal128,
-  }],
+  pricingTiers: {
+    type: [pricingTierSchema],
+    required: true,
+    validate: v => Array.isArray(v) && v.length > 0
+  },
   variants: [{
     name: String,
     options: [{
@@ -129,14 +144,63 @@ const ProductSchema = new mongoose.Schema({
 
 const Product = mongoose.model("Product", ProductSchema);
 
-const RequestSchema = new mongoose.Schema({
-  senderEmail: { type: String, ref: "Manufacturer", required: true },
-  receiverEmail: { type: String, ref: "Manufacturer", required: true },
-  message: { type: String, required: true },
-  status: { type: String, default: "pending", enum: ["pending", "accepted", "rejected", "contacted"] },
-}, { timestamps: true });
+const quotationRequestSchema = new mongoose.Schema({
+  receiverId: {
+    type: String,
+    ref: "User",
+    required: true
+  },
+  senderId: {
+    type: String,
+    ref: "User",
+    required: true
+  },
+  senderName: {
+    type: String,
+    required: true
+  },
+  message: {
+    type: String,
+    required: true
+  },
+  productInterest: {
+    type: String,
+    required: true
+  },
+  productId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Product",
+    required: true
+  },
+  quantity: {
+    type: Number,
+    required: true,
+    min: 1
+  },
+  status: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "pending"
+  },
+  isRead: {
+    type: Boolean,
+    default: false
+  },
+  budget: {
+    type: String,
+    required: true
+  },
+  deliveryLocation: {
+    type: String,
+    required: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
 
-const Request = mongoose.model("Request", RequestSchema);
+const QuotationRequest = mongoose.model("QuotationRequest", quotationRequestSchema);
 
 const MessageSchema = new mongoose.Schema({
   senderEmail: { type: String, ref: "Manufacturer", required: true },
@@ -180,9 +244,8 @@ const RevenueSchema = new mongoose.Schema({
     default: "pending" 
   },
 
-  paymentMethod: { type: String }, // e.g., bank_transfer, PayPal, Stripe
-  transactionId: { type: String }, // external payment ref
-
+  paymentMethod: { type: String },
+  transactionId: { type: String },
   notes: { type: String },
 }, { timestamps: true });
 
@@ -204,7 +267,7 @@ const AddressSchema = new mongoose.Schema({
 const Address = mongoose.model('Address', AddressSchema);
 
 const OrderSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  userId: { type: String, ref: 'User', required: true },
   product: {
     productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
     title: String,
@@ -216,10 +279,28 @@ const OrderSchema = new mongoose.Schema({
   shippingAddress: { type: mongoose.Schema.Types.ObjectId, ref: 'Address', required: true },
   paymentMethod: { type: String, enum: ['card', 'trade-credit', 'bank-transfer', 'financing'], required: true },
   status: { type: String, default: 'Pending' },
+  shipping_type: { type: String, default: 'Standard', enum: ['Standard', 'Priority', 'Express', 'Scheduled'] },
+  paymentStatus: { type: String, default: 'Pending' },
+  shippingStatus: { type: String, default: 'Pending' },
+    razorpayDetails: {
+    paymentId: String,
+    orderId: String,
+    signature: String,
+    method: String
+  },
+  trackingNumber: { type: String },
   shippingFee: mongoose.Types.Decimal128,
   tax: mongoose.Types.Decimal128,
   totalAmount: mongoose.Types.Decimal128
 }, { timestamps: true });
+
+// Add text index for searching
+OrderSchema.index({
+  'product.title': 'text',
+  status: 'text',
+  paymentStatus: 'text',
+  trackingNumber: 'text'
+});
 
 const Order = mongoose.model('Order', OrderSchema);
 
@@ -228,7 +309,7 @@ module.exports = {
   ProfileTrack,
   Notification,
   Product,
-  Request,
+  QuotationRequest,
   Message,
   ManuNotification,
   Revenue,

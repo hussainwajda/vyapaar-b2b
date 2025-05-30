@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import {getTaxRate} from "../../assets/taxCalc";
+import Razorpay from "razorpay";
+
 import { 
   ArrowLeft, 
   MapPin, 
@@ -23,19 +25,20 @@ import {
   Package,
   Truck
 } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 
 export default function Checkout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const SERVER_URL = import.meta.env.VITE_SERVER_URL;
+  const [shippingType, setShippingType] = useState("Standard");
   const { product, quantity, price } = location.state || {};
-  const [selectedAddress, setSelectedAddress] = useState("1");
+  const [selectedAddress, setSelectedAddress] = useState("");
   const [isloading, setIsLoading] = useState(false);
   const [addresses, setAddresses] = useState("1");
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("card");
   const [newAddress, setNewAddress] = useState({
     name: "",
     company: "",
@@ -68,6 +71,78 @@ export default function Checkout() {
   }
 };
 
+const handleRazorpayPayment = async () => {
+  try {
+    const response = await axios.post(`${SERVER_URL}/api/create-order`, {
+      amount: total.toFixed(0), // amount in paise
+    });
+
+    const { id: order_id } = response.data;
+
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID, // Your Razorpay test key
+      amount: total.toFixed(0),
+      currency: "INR",
+      name: "Vyapaar",
+      description: "Order Payment",
+      order_id,
+      handler: async function (response: any) {
+        toast.success("Payment Successful!");
+
+        await submitOrder(response.razorpay_payment_id);
+      },
+      prefill: {
+        email: getEmailFromUser(),
+      },
+      theme: {
+        color: "#3399cc",
+      },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+  } catch (err) {
+    console.error("Payment initiation failed:", err);
+    toast.error("Failed to initiate payment");
+  }
+};
+
+const submitOrder = async (paymentId: string) => {
+  if (!selectedAddress || selectedAddress.length < 24) {
+  toast.error("Please select a valid shipping address.");
+  return;
+}
+  try {
+    const res = await axios.post(`${SERVER_URL}/api/submit-order`, {
+      userId: getEmailFromUser(),
+      product: {
+        productId: product._id,
+        title: product.title,
+        image: product.images?.[0],
+        quantity,
+        unitPrice: price,
+        total: price * quantity
+      },
+      shippingAddress: selectedAddress,
+      paymentMethod: "card",
+      shipping_type: shippingType,
+      shippingFee: shipping,
+      tax,
+      totalAmount: total,
+      paymentStatus: "Paid",
+      razorpayPaymentId: paymentId
+    });
+
+    toast.success("Order placed successfully!");
+    setTimeout(() => {
+      window.location.href = `/order/${res.data.orderId}`;
+    }, 1500);
+  } catch (err) {
+    console.error("Order submission failed:", err);
+    toast.error("Failed to place order");
+  }
+};
+
 
 useEffect(() => {
   const fetchAddresses = async () => {
@@ -93,7 +168,7 @@ useEffect(() => {
 }, [getEmailFromUser]);
 
   const subtotal = price * quantity;;
-  const shipping = 150;
+  const shipping = 1;
   let taxPercentage = 0;
   if (product && product.category) {
     const taxRateString = getTaxRate(product.category, product.subCategory);
@@ -109,11 +184,10 @@ useEffect(() => {
   const tax = subtotal * taxPercentage;
   const total = subtotal + shipping + tax;
 
-  const handlePlaceOrder = () => {
-    // Create order and redirect to order confirmation
-    const orderId = `ORD-${Date.now()}`;
-    setLocation(`/order-confirmation/${orderId}`);
-  };
+  // const handlePlaceOrder = () => {
+  //   const orderId = `ORD-${Date.now()}`;
+  //   setLocation(`/order-confirmation/${orderId}`);
+  // };
   const normalizedAddresses = Array.isArray(addresses) ? addresses : (addresses ? [addresses] : []);
   console.log("normal",normalizedAddresses);
 
@@ -124,7 +198,7 @@ useEffect(() => {
       <div className="flex items-center space-x-4">
         <Button 
           variant="ghost" 
-          onClick={() => setLocation('/products')}
+          onClick={() => navigate(-1)}
           className="p-2"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -291,101 +365,27 @@ useEffect(() => {
             </CardContent>
           </Card>
 
-          {/* Payment Method */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <CreditCard className="h-5 w-5" />
-                <span>Payment Method</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                {/* Credit/Debit Card */}
-                <div className="flex items-start space-x-3">
-                  <RadioGroupItem value="card" id="card" className="mt-1" />
-                  <Label htmlFor="card" className="flex-1 cursor-pointer">
-                    <div className="border rounded-lg p-4 hover:bg-slate-50 transition-colors">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <CreditCard className="h-5 w-5 text-blue-600" />
-                        <span className="font-medium">Credit or Debit Card</span>
-                      </div>
-                      {paymentMethod === "card" && (
-                        <div className="space-y-3 mt-4">
-                          <div>
-                            <Label>Card Number</Label>
-                            <Input placeholder="1234 5678 9012 3456" />
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <Label>Expiry Date</Label>
-                              <Input placeholder="MM/YY" />
-                            </div>
-                            <div>
-                              <Label>CVV</Label>
-                              <Input placeholder="123" />
-                            </div>
-                          </div>
-                          <div>
-                            <Label>Cardholder Name</Label>
-                            <Input placeholder="John Smith" />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </Label>
-                </div>
-
-                {/* Trade Credit */}
-                <div className="flex items-start space-x-3">
-                  <RadioGroupItem value="trade-credit" id="trade-credit" className="mt-1" />
-                  <Label htmlFor="trade-credit" className="flex-1 cursor-pointer">
-                    <div className="border rounded-lg p-4 hover:bg-slate-50 transition-colors">
-                      <div className="flex items-center space-x-3">
-                        <Building className="h-5 w-5 text-green-600" />
-                        <div>
-                          <span className="font-medium">Trade Credit</span>
-                          <p className="text-sm text-slate-600">Net 30 payment terms</p>
-                        </div>
-                      </div>
-                    </div>
-                  </Label>
-                </div>
-
-                {/* Financing */}
-                <div className="flex items-start space-x-3">
-                  <RadioGroupItem value="financing" id="financing" className="mt-1" />
-                  <Label htmlFor="financing" className="flex-1 cursor-pointer">
-                    <div className="border rounded-lg p-4 hover:bg-slate-50 transition-colors">
-                      <div className="flex items-center space-x-3">
-                        <Clock className="h-5 w-5 text-purple-600" />
-                        <div>
-                          <span className="font-medium">Equipment Financing</span>
-                          <p className="text-sm text-slate-600">0% APR for 12 months</p>
-                        </div>
-                      </div>
-                    </div>
-                  </Label>
-                </div>
-
-                {/* Bank Transfer */}
-                <div className="flex items-start space-x-3">
-                  <RadioGroupItem value="bank-transfer" id="bank-transfer" className="mt-1" />
-                  <Label htmlFor="bank-transfer" className="flex-1 cursor-pointer">
-                    <div className="border rounded-lg p-4 hover:bg-slate-50 transition-colors">
-                      <div className="flex items-center space-x-3">
-                        <Shield className="h-5 w-5 text-blue-600" />
-                        <div>
-                          <span className="font-medium">Bank Transfer</span>
-                          <p className="text-sm text-slate-600">Direct wire transfer</p>
-                        </div>
-                      </div>
-                    </div>
-                  </Label>
-                </div>
-              </RadioGroup>
-            </CardContent>
-          </Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Truck className="h-5 w-5" />
+                  <span>Select Delivery Type</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Select value={shippingType} onValueChange={setShippingType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select delivery type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Standard">Standard</SelectItem>
+                    <SelectItem value="Priority">Priority</SelectItem>
+                    <SelectItem value="Express">Express</SelectItem>
+                    <SelectItem value="Scheduled">Scheduled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
 
           {/* Order Notes */}
           <Card>
@@ -484,9 +484,9 @@ useEffect(() => {
                 </div>
                 <Button 
                   className="w-full bg-orange-600 hover:bg-orange-700"
-                  onClick={handlePlaceOrder}
+                  onClick={handleRazorpayPayment}
                 >
-                  Place Order
+                  Pay Now
                 </Button>
                 <p className="text-xs text-slate-500 text-center">
                   Your order will be processed securely

@@ -231,7 +231,9 @@ export default function ProductSearch() {
           {products.map((product) => {
             const currentImg = currentImageIndex[product._id] || 0
             const hasImages = product.images && product.images.length > 0
-
+            const displayPrice = product.price && typeof product.price === 'object' && '$numberDecimal' in product.price
+            ? product.price.$numberDecimal
+            : product.price;
             return (
               <Card onClick={() => navigate(`/product/${product._id}`)} key={product._id} className="overflow-hidden hover:shadow-lg cursor-pointer transition-shadow bg-[var(--color-secondary)]">
                 <CardContent className="p-6">
@@ -286,7 +288,7 @@ export default function ProductSearch() {
                         />
 
                         <div className="flex items-center gap-4 mb-3">
-                          <span className="text-2xl font-bold text-red-600">{formatPrice(product.price)}</span>
+                          <span className="text-2xl font-bold text-red-600">Rs.{displayPrice}</span>
                           <span className="text-gray-500">/ Set (FOB Price)</span>
                         </div>
 

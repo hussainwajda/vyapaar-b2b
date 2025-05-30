@@ -332,7 +332,7 @@ const getCurrentPrice = () => {
                 <Button 
                   variant="outline" 
                   className="w-full bg-[var(--color-primary)] hover:bg-[var(--color-heading)] text-[var(--color-heading)] hover:text-[var(--color-primary)]"
-                  onClick={() => setLocation('/checkout')}
+                  onClick={() => navigate(`/product/${id}/request-quotation`)}
                 >
                   Request Quotation
                 </Button>

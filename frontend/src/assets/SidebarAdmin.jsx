@@ -46,10 +46,10 @@ const mockdata = [
   { icon: Factory, label: 'Manufacturer', to: '/admin/manufacturer' },
   { icon: ShoppingCart, label: 'Orders', to: '/admin/orders' },
   { icon: Package, label: 'Products', to: '/admin/products' },
-  { icon: Users, label: 'Customers', to: '/admin/customers' },
-  { icon: BarChart, label: 'Reports', to: '/admin/reports' },
-  { icon: User, label: 'Account', to: '/admin/account' },
-  { icon: Shield, label: 'Security', to: '/admin/security' },
+  // { icon: Users, label: 'Customers', to: '/admin/customers' },
+  // { icon: BarChart, label: 'Reports', to: '/admin/reports' },
+  // { icon: User, label: 'Account', to: '/admin/account' },
+  // { icon: Shield, label: 'Security', to: '/admin/security' },
   { icon: Settings, label: 'Settings', to: '/admin/settings' },
 ];
 

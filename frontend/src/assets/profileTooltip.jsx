@@ -11,7 +11,7 @@ import NotificationModal from './NotificationModal'; // Adjust the path as neede
 import axios from 'axios';
 import {User} from "lucide-react"
 const ProfileMenu = () => { // Renamed from ProfileToolTip for clarity
-  const ServerUrl = "http://localhost:3001";
+  const ServerUrl = import.meta.env.VITE_SERVER_URL;
   const { user, logout } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false); // State to control NotificationModal
